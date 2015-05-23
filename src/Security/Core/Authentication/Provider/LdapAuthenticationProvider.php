@@ -55,7 +55,7 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
     {
         $user = $this->userProvider->loadUserByUsername($token->getUsername());
         if ($user && $this->ldapAuth($token->getUserName(), $token->getCredentials())) {
-            return new UsernamePasswordToken($user, null, $this->providerKey, $user->getRoles());
+            return new UsernamePasswordToken($user, null, $this->providerKey, array_unique(array_merge($token->getRoles(), $user->getRoles())));
         }
 
         throw new AuthenticationException('Ldap authentication failed.');
