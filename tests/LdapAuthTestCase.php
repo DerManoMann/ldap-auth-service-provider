@@ -69,6 +69,18 @@ abstract class LdapAuthTestCase extends \PHPUnit_Framework_TestCase
                         'CN=Development,OU=Groups,DC=radebatz,DC=net',
                     ),
                 ),
+                'dennis' => array(
+                    'username' => 'dennis',
+                    'firstName' => 'Dennis',
+                    'password' => 'foo',
+                    // expected
+                    'roles' => array(
+                        'ROLE_USER',
+                    ),
+                    'groups' => array(
+                        'CN=Development,OU=Groups,DC=radebatz,DC=net',
+                    ),
+                ),
             ),
 
             'ldap' => array(

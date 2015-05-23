@@ -27,6 +27,33 @@ use Radebatz\Silex\LdapAuth\Tests\Mock\MockLdap;
 class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
 {
 
+    public function testLdapHttpAuthentication()
+    {
+        $app = $this->createApplication('http');
+
+        $client = new Client($app);
+
+        $client->request('get', '/');
+        $this->assertEquals(401, $client->getResponse()->getStatusCode());
+        $this->assertEquals('Basic realm="Secured"', $client->getResponse()->headers->get('www-authenticate'));
+
+        $client->request('get', '/', array(), array(), array('PHP_AUTH_USER' => 'dennis', 'PHP_AUTH_PW' => 'foo'));
+        $this->assertEquals('dennisAUTHENTICATED', $client->getResponse()->getContent());
+        $client->request('get', '/admin');
+        $this->assertEquals(403, $client->getResponse()->getStatusCode());
+
+        $client->restart();
+
+        $client->request('get', '/');
+        $this->assertEquals(401, $client->getResponse()->getStatusCode());
+        $this->assertEquals('Basic realm="Secured"', $client->getResponse()->headers->get('www-authenticate'));
+
+        $client->request('get', '/', array(), array(), array('PHP_AUTH_USER' => 'admin', 'PHP_AUTH_PW' => 'foo'));
+        $this->assertEquals('adminAUTHENTICATEDADMIN', $client->getResponse()->getContent());
+        $client->request('get', '/admin');
+        $this->assertEquals('admin', $client->getResponse()->getContent());
+    }
+
     public function testLdapFormAuthentication()
     {
         $app = $this->createApplication('form');
@@ -75,7 +102,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
     }
 
 
-    public function createApplication($authenticationMethod = 'form')
+    public function createApplication($authenticationMethod = 'form', $name = 'default')
     {
         $app = new Application();
         $app->register(new SessionServiceProvider());
@@ -83,18 +110,19 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $app = call_user_func(array($this, 'add'.ucfirst($authenticationMethod).'Authentication'), $app);
 
         // ********* //
-        $this->registerLdapAuthenticationServiceProvider($app);
+        $this->registerLdapAuthenticationServiceProvider($app, $name, $authenticationMethod);
 
         $app['session.test'] = true;
 
         return $app;
     }
 
-    protected function registerLdapAuthenticationServiceProvider($app)
+    protected function registerLdapAuthenticationServiceProvider($app, $name, $entryPoint)
     {
-        $app->register(new LdapAuthenticationServiceProvider());
+        // ldap: name of firewall auth type to use
+        $app->register(new LdapAuthenticationServiceProvider('ldap', $entryPoint));
 
-        $app['security.ldap.default.ldap'] = function () {
+        $app['security.ldap.'.$name.'.ldap'] = function () {
             return $this->createLdap();
         };
     }
@@ -161,6 +189,57 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         });
 
         $app->get('/admin', function() use ($app) {
+            return 'admin';
+        });
+
+        return $app;
+    }
+
+    private function addHttpAuthentication($app)
+    {
+        $app->register(new SecurityServiceProvider(), array(
+            'security.firewalls' => array(
+                'default' => array(
+                    'pattern' => '^.*$',
+                    'ldap' => $this->getOptions(),
+                    'users' => function() use ($app) {
+                        $options = $this->getOptions();
+
+                        return new LdapUserProvider('test', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
+                    },
+                    /*
+                    'users' => array(
+                        // password is foo
+                        'dennis' => array('ROLE_USER', '5FZ2Z8QIkA7UTZ4BYkoC+GsReLf569mSKDsfods6LYQ8t+a8EW9oaircfMpmaLbPBh4FOBiiFyLfuZmTSUwzZg=='),
+                        'admin'  => array('ROLE_ADMIN', '5FZ2Z8QIkA7UTZ4BYkoC+GsReLf569mSKDsfods6LYQ8t+a8EW9oaircfMpmaLbPBh4FOBiiFyLfuZmTSUwzZg=='),
+                    ),
+                    */
+                ),
+            ),
+            'security.access_rules' => array(
+                array('^/admin', 'ROLE_ADMIN'),
+            ),
+            'security.role_hierarchy' => array(
+                'ROLE_ADMIN' => array('ROLE_USER'),
+            ),
+        ));
+
+        $app->get('/', function () use ($app) {
+            $user = $app['security.token_storage']->getToken()->getUser();
+            $content = is_object($user) ? $user->getUsername() : 'ANONYMOUS';
+
+            if ($app['security.authorization_checker']->isGranted('IS_AUTHENTICATED_FULLY')) {
+                $content .= 'AUTHENTICATED';
+            }
+
+            if ($app['security.authorization_checker']->isGranted('ROLE_ADMIN')) {
+                $content .= 'ADMIN';
+            }
+
+            return $content;
+        });
+
+        $app->get('/admin', function () use ($app) {
             return 'admin';
         });
 
