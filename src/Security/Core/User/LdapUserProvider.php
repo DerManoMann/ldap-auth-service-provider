@@ -1,0 +1,112 @@
+<?php
+
+/*
+ * This file is part of the LdapAuthentication service provider.
+ *
+ * (c) Martin Rademacher <mano@radebatz.net>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Radebatz\Silex\LdapAuth\Security\Core\User;
+
+use Exception;
+use RuntimeException;
+use Psr\Log\LoggerInterface;
+use Zend\Ldap\Ldap;
+use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\UserProviderInterface;
+
+/**
+ * Ldap user provider.
+ */
+class LdapUserProvider implements UserProviderInterface {
+    protected $name;
+    protected $ldap;
+    protected $logger;
+    protected $options;
+
+    /**
+     * Create new instance.
+     *
+     * @param string $name The service name.
+     * @param Ldap $ldap Ldap resource to use.
+     * @param LoggerInterface $logger Optional logger.
+     * @param array $options Configuration options.
+     */
+    public function __construct($name, Ldap $ldap, LoggerInterface $logger = null, array $options = array())
+    {
+        $this->name = $name;
+        $this->ldap = $ldap;
+        $this->logger = $logger;
+        $this->options = $options;
+    }
+
+    /**
+     * {inheritDoc}
+     */
+    public function loadUserByUsername($username)
+    {
+        $userData = null;
+        try {
+            if ($collection = $this->ldap->search(sprintf($this->options['filter'], $username), $this->options['baseDn'])) {
+                $userData = $collection->getFirst();
+            }
+        } catch (Exception $e) {
+            $unfe = new UsernameNotFoundException('Ldap search failed', 0, $e);
+            $unfe->setUsername($username);
+            throw $unfe;
+        }
+
+        if (!$userData) {
+            throw new UsernameNotFoundException(sprintf('Unknown user: username=%s', $username));
+        }
+
+        // create user
+        $userClass = $this->options['class'];
+        $roles = array();
+        if (array_key_exists('memberof', $userData) && array_key_exists('roles', $this->options)) {
+            foreach ($this->options['roles'] as $role => $group) {
+                if (in_array($group, $userData['memberof'])) {
+                    $roles[] = $role;
+                }
+            }
+        }
+        $user = new $userClass($username, null, array_unique($roles));
+
+        // set custom attributes
+        foreach ($this->options['attr'] as $key => $property) {
+            if (array_key_exists($key, $userData) && $userData[$key]) {
+                // use first value
+                $method = 'set'.ucwords($property);
+                $user->$method($userData[$key][0]);
+            }
+        }
+
+        return $user;
+    }
+
+    /**
+     * {inheritDoc}
+     */
+    public function refreshUser(UserInterface $user)
+    {
+        if (!$this->supportsClass(get_class($user))) {
+            throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', get_class($user)));
+        }
+
+        return $this->loadUserByUsername($user->getUsername());
+    }
+
+    /**
+     * {inheritDoc}
+     */
+    public function supportsClass($class)
+    {
+        return $class === $this->options['class'];
+    }
+
+}
