@@ -19,7 +19,7 @@ class CustomUserProvider implements UserProviderInterface
 {
     public function loadUserByUsername($username)
     {
-        return new User($username, null);
+        return new User($username, null, array('ROLE_USER'));
     }
 
     public function refreshUser(UserInterface $user)

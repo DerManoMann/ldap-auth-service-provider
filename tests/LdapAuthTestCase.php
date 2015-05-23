@@ -36,6 +36,7 @@ abstract class LdapAuthTestCase extends \PHPUnit_Framework_TestCase
                     // expected
                     'roles' => array(
                         'ROLE_USER',
+                        'ROLE_ADMIN',
                     ),
                     'groups' => array(
                         'CN=Development,OU=Groups,DC=radebatz,DC=net',

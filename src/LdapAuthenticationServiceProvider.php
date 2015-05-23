@@ -24,15 +24,18 @@ use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 {
     protected $serviceName;
+    protected $entryPoint;
 
     /**
      * Create new instance.
      *
      * @param string $serviceName Service name.
+     * @param string $entryPoint  The authentication entry point.
      */
-    public function __construct($serviceName = 'ldap')
+    public function __construct($serviceName = 'ldap', $entryPoint = 'form')
     {
         $this->serviceName = $serviceName;
+        $this->entryPoint = $entryPoint;
     }
 
     /**
@@ -42,6 +45,8 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
     {
         // our name
         $serviceName = $this->serviceName;
+        // entry point
+        $entryPoint = $this->entryPoint;
 
         $defaults = array(
             // authentication defaults
@@ -88,7 +93,7 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
         });
 
         // set up authentication provider factory and user provider
-        $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName) {
+        $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName, $entryPoint) {
             $options = $app['security.ldap.'.$serviceName.'.options']($options);
 
             // the actual Ldap resource
@@ -97,8 +102,6 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
                     return new Ldap($options['ldap']);
                 };
             }
-
-            $entryPoint = 'form';
 
             if ($entryPoint && !isset($app['security.entry_point.'.$name.'.'.$entryPoint])) {
                 $app['security.entry_point.'.$name.'.'.$entryPoint] = $app['security.entry_point.'.$entryPoint.'._proto']($name, $options);
