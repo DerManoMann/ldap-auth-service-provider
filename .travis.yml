@@ -6,7 +6,7 @@ php:
   - hhvm
   - 7
 
-sudo: false
+sudo: true
 
 install: travis_retry composer install --no-interaction --prefer-source
 
