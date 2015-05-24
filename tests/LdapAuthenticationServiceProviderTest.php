@@ -15,6 +15,7 @@ use Silex\Application;
 use Silex\Provider\SessionServiceProvider;
 use Silex\Provider\SecurityServiceProvider;
 use Symfony\Component\HttpKernel\Client;
+use Symfony\Component\Security\Http\Firewall\UsernamePasswordFormAuthenticationListener;
 use Radebatz\Silex\LdapAuth\LdapAuthenticationServiceProvider;
 use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 use Radebatz\Silex\LdapAuth\Tests\Mock\MockLdap;
@@ -59,6 +60,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $app = $this->createApplication('form');
 
         $client = new Client($app);
+
         $client->request('get', '/');
         $this->assertEquals('ANONYMOUS', $client->getResponse()->getContent());
 
@@ -107,20 +109,20 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $app = new Application();
         $app->register(new SessionServiceProvider());
 
-        $app = call_user_func(array($this, 'add'.ucfirst($authenticationMethod).'Authentication'), $app);
+        $app = call_user_func(array($this, 'add'.ucfirst($authenticationMethod ?: 'null').'Authentication'), $app);
 
         // ********* //
-        $this->registerLdapAuthenticationServiceProvider($app, $name, $authenticationMethod);
+        $this->registerLdapAuthenticationServiceProvider($app, $name);
 
         $app['session.test'] = true;
 
         return $app;
     }
 
-    protected function registerLdapAuthenticationServiceProvider($app, $name, $entryPoint)
+    protected function registerLdapAuthenticationServiceProvider($app, $name)
     {
         // ldap: name of firewall auth type to use
-        $app->register(new LdapAuthenticationServiceProvider('ldap', $entryPoint));
+        $app->register(new LdapAuthenticationServiceProvider('ldap'));
 
         $app['security.ldap.'.$name.'.ldap'] = function () {
             return $this->createLdap();
@@ -142,13 +144,18 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
                             'check_path' => '/login_check_ldap',
                             'require_previous_session' => false,
                         ),
-                        $this->getOptions()
+                        $this->getOptions(),
+                        array(
+                            'auth' => array(
+                                'entryPoint' => 'form',
+                            ),
+                        )
                     ),
                     'logout' => true,
                     'users' => function() use ($app) {
                         $options = $this->getOptions();
 
-                        return new LdapUserProvider('test', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
+                        return new LdapUserProvider('ldap', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
                     },
                     /*
                         // password is foo
@@ -201,11 +208,18 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
             'security.firewalls' => array(
                 'default' => array(
                     'pattern' => '^.*$',
-                    'ldap' => $this->getOptions(),
+                    'ldap' => array_merge(
+                        $this->getOptions(),
+                        array(
+                            'auth' => array(
+                                'entryPoint' => 'http',
+                            ),
+                        )
+                    ),
                     'users' => function() use ($app) {
                         $options = $this->getOptions();
 
-                        return new LdapUserProvider('test', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
+                        return new LdapUserProvider('ldap', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
                     },
                     /*
                     'users' => array(

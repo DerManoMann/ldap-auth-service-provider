@@ -24,18 +24,15 @@ use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 {
     protected $serviceName;
-    protected $entryPoint;
 
     /**
      * Create new instance.
      *
      * @param string $serviceName Service name.
-     * @param string $entryPoint  The authentication entry point.
      */
-    public function __construct($serviceName = 'ldap', $entryPoint = 'form')
+    public function __construct($serviceName = 'ldap')
     {
         $this->serviceName = $serviceName;
-        $this->entryPoint = $entryPoint;
     }
 
     /**
@@ -45,14 +42,14 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
     {
         // our name
         $serviceName = $this->serviceName;
-        // entry point
-        $entryPoint = $this->entryPoint;
 
         $defaults = array(
             // authentication defaults
             'auth' => array(
-                // default roles for all authenticated users;
-                // we do need at least one to make UsernamePasswordToken flag authenticated
+                // default is custom
+                'entryPoint' => null,
+                // default roles for all authenticated users:
+                // we do need at least one to make UsernamePasswordToken flag authenticated if we use the provider stand alone
                 'roles' => array(
                     'ROLE_USER',
                 ),
@@ -93,8 +90,9 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
         });
 
         // set up authentication provider factory and user provider
-        $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName, $entryPoint) {
+        $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName) {
             $options = $app['security.ldap.'.$serviceName.'.options']($options);
+            $entryPoint = $options['auth']['entryPoint'];
 
             // the actual Ldap resource
             if (!isset($app['security.ldap.'.$name.'.ldap'])) {
@@ -119,7 +117,9 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
             };
 
             // define the authentication listener object
-            $app['security.authentication_listener.'.$name.'.'.$serviceName] = $app['security.authentication_listener.'.$entryPoint.'._proto']($name, $options);
+            if ($entryPoint) {
+                $app['security.authentication_listener.'.$name.'.'.$serviceName] = $app['security.authentication_listener.'.$entryPoint.'._proto']($name, $options);
+            }
 
             return array(
                 // the authentication provider id
