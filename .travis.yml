@@ -1,11 +1,18 @@
 language: php
 
 php:
+  - 5.5
+  - 5.6
   - hhvm
+  - 7
 
 sudo: false
 
 install: travis_retry composer install --no-interaction --prefer-source
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq php-xml php-ldap
 
 after_script:
   - php vendor/bin/coveralls -v
