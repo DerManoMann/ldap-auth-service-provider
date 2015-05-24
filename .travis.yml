@@ -12,7 +12,7 @@ install: travis_retry composer install --no-interaction --prefer-source
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq php5-xml php5-ldap
+  - sudo apt-get install -qq php5-ldap
 
 after_script:
   - php vendor/bin/coveralls -v
