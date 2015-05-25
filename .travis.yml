@@ -13,8 +13,6 @@ install: travis_retry composer install --no-interaction --prefer-source
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq php5-ldap
-
-before_script:
   - echo "extension = ldap.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 after_script:
