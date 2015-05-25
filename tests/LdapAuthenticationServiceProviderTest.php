@@ -15,10 +15,8 @@ use Silex\Application;
 use Silex\Provider\SessionServiceProvider;
 use Silex\Provider\SecurityServiceProvider;
 use Symfony\Component\HttpKernel\Client;
-use Symfony\Component\Security\Http\Firewall\UsernamePasswordFormAuthenticationListener;
 use Radebatz\Silex\LdapAuth\LdapAuthenticationServiceProvider;
 use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
-use Radebatz\Silex\LdapAuth\Tests\Mock\MockLdap;
 
 /**
  * Test Ldap authentication service provider.
@@ -27,7 +25,6 @@ use Radebatz\Silex\LdapAuth\Tests\Mock\MockLdap;
  */
 class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
 {
-
     public function testLdapHttpAuthentication()
     {
         $app = $this->createApplication('http');
@@ -103,7 +100,6 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $this->assertEquals('admin', $client->getResponse()->getContent());
     }
 
-
     public function createApplication($authenticationMethod = 'form', $name = 'default')
     {
         $app = new Application();
@@ -152,7 +148,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
                         )
                     ),
                     'logout' => true,
-                    'users' => function() use ($app) {
+                    'users' => function () use ($app) {
                         $options = $this->getOptions();
 
                         return new LdapUserProvider('ldap', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
@@ -173,13 +169,13 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
             ),
         ));
 
-        $app->get('/login', function(Request $request) use ($app) {
+        $app->get('/login', function (Request $request) use ($app) {
             $app['session']->start();
 
             return $app['security.last_error']($request);
         });
 
-        $app->get('/', function() use ($app) {
+        $app->get('/', function () use ($app) {
             $user = $app['security']->getToken()->getUser();
 
             $content = is_object($user) ? $user->getUsername() : 'ANONYMOUS';
@@ -195,7 +191,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
             return $content;
         });
 
-        $app->get('/admin', function() use ($app) {
+        $app->get('/admin', function () use ($app) {
             return 'admin';
         });
 
@@ -216,7 +212,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
                             ),
                         )
                     ),
-                    'users' => function() use ($app) {
+                    'users' => function () use ($app) {
                         $options = $this->getOptions();
 
                         return new LdapUserProvider('ldap', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
@@ -259,5 +255,4 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
 
         return $app;
     }
-
 }

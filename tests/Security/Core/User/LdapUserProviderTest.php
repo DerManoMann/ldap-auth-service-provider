@@ -19,7 +19,6 @@ use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
  */
 class LdapUserProviderTest extends LdapAuthTestCase
 {
-
     public function testLoadUser()
     {
         $options = $this->getOptions();
@@ -49,5 +48,4 @@ class LdapUserProviderTest extends LdapAuthTestCase
         $this->assertNotNull($refreshedUser);
         $this->assertEquals($refreshedUser->getUsername(), $user->getUsername());
     }
-
 }

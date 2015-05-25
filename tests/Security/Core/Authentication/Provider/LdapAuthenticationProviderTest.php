@@ -20,7 +20,6 @@ use Radebatz\Silex\LdapAuth\Security\Core\Authentication\Provider\LdapAuthentica
  */
 class LdapAuthenticationProviderTest extends LdapAuthTestCase
 {
-
     public function testAuthenticate()
     {
         $options = $this->getOptions();
@@ -36,5 +35,4 @@ class LdapAuthenticationProviderTest extends LdapAuthTestCase
             $this->assertTrue($authenticateToken->isAuthenticated());
         }
     }
-
 }

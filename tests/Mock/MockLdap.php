@@ -12,7 +12,6 @@
 namespace Radebatz\Silex\LdapAuth\Tests\Mock;
 
 use Zend\Ldap\Ldap;
-use Zend\Ldap\Collection;
 use Zend\Ldap\Exception\LdapException;
 
 /**
@@ -55,5 +54,4 @@ class MockLdap extends Ldap
 
         return $this->createCollection(new MockDefaultIterator($data), $collectionClass);
     }
-
 }

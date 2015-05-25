@@ -35,12 +35,12 @@ class CustomUser implements AdvancedUserInterface
 
     public function getPassword()
     {
-        return null;
+        return;
     }
 
     public function getSalt()
     {
-        return null;
+        return;
     }
 
     public function getUsername()
@@ -81,5 +81,4 @@ class CustomUser implements AdvancedUserInterface
     {
         return $this->firstName;
     }
-
 }

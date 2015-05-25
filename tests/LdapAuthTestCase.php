@@ -20,7 +20,6 @@ use Radebatz\Silex\LdapAuth\Tests\Mock\MockLdap;
  */
 abstract class LdapAuthTestCase extends \PHPUnit_Framework_TestCase
 {
-
     protected function getOptions()
     {
         $customOptions = dirname(__DIR__).'/phpunit.local.yml';
@@ -95,8 +94,8 @@ abstract class LdapAuthTestCase extends \PHPUnit_Framework_TestCase
                     'givenname' => 'firstName',
                 ),
                 'roles' => array(
-                    'ROLE_USER' => 'CN=Development,OU=Groups,DC=radebatz,DC=net',
-                    'ROLE_ADMIN' => 'CN=Admins,OU=Groups,DC=radebatz,DC=net',
+                    'CN=Development,OU=Groups,DC=radebatz,DC=net' => 'ROLE_USER',
+                    'CN=Admins,OU=Groups,DC=radebatz,DC=net' => 'ROLE_ADMIN',
                 ),
                 'class' => 'Radebatz\Silex\LdapAuth\Tests\Security\Core\User\CustomUser',
                 // just the name :)
@@ -117,5 +116,4 @@ abstract class LdapAuthTestCase extends \PHPUnit_Framework_TestCase
 
         return $mock ? new MockLdap($options['test']) : new Ldap($options['ldap']);
     }
-
 }

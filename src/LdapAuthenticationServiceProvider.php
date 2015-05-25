@@ -11,12 +11,10 @@
 
 namespace Radebatz\Silex\LdapAuth;
 
-use InvalidArgumentException;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 use Zend\Ldap\Ldap;
 use Radebatz\Silex\LdapAuth\Security\Core\Authentication\Provider\LdapAuthenticationProvider;
-use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 
 /**
  * Ldap authentication service provider.
@@ -60,22 +58,6 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
                 'bindRequiresDn' => false,
                 'username' => null,
                 'password' => null,
-            ),
-
-            // user provider defaults
-            'user' => array(
-                'attr' => array(
-                    // attribute => property
-                    // these require setter support in the user class
-                    // 'givenname' => 'firstName'
-                ),
-                'roles' => array(
-                    // group => role
-                    //'CN=Development,OU=Groups,DC=globalbrain,DC=net' => 'ROLE_DEVELOPER',
-                ),
-                'class' => 'Symfony\\Component\\Security\\Core\\User\\User',
-                'filter' => '(&(objectClass=user)(sAMAccountName=%s))',
-                'baseDn' => null,
             ),
         );
 
@@ -129,9 +111,8 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
                 // the entry point id
                 $entryPoint ? 'security.entry_point.'.$name.'.'.$entryPoint : null,
                 // the position of the listener in the stack
-                'pre_auth'
+                'pre_auth',
             );
         });
     }
-
 }

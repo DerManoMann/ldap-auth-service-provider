@@ -29,5 +29,4 @@ class CustomUserProvider implements UserProviderInterface
     public function supportsClass($class)
     {
     }
-
 }

@@ -12,7 +12,6 @@
 namespace Radebatz\Silex\LdapAuth\Security\Core\User;
 
 use Exception;
-use RuntimeException;
 use Psr\Log\LoggerInterface;
 use Zend\Ldap\Ldap;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
@@ -23,7 +22,8 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 /**
  * Ldap user provider.
  */
-class LdapUserProvider implements UserProviderInterface {
+class LdapUserProvider implements UserProviderInterface
+{
     protected $name;
     protected $ldap;
     protected $logger;
@@ -32,21 +32,33 @@ class LdapUserProvider implements UserProviderInterface {
     /**
      * Create new instance.
      *
-     * @param string $name The service name.
-     * @param Ldap $ldap Ldap resource to use.
-     * @param LoggerInterface $logger Optional logger.
-     * @param array $options Configuration options.
+     * @param string          $name    The service name.
+     * @param Ldap            $ldap    Ldap resource to use.
+     * @param LoggerInterface $logger  Optional logger.
+     * @param array           $options Configuration options.
      */
     public function __construct($name, Ldap $ldap, LoggerInterface $logger = null, array $options = array())
     {
         $this->name = $name;
         $this->ldap = $ldap;
         $this->logger = $logger;
-        $this->options = $options;
+        $defaults = array(
+            'attr' => array(
+                // attribute => property
+                // these require setter support in the user class
+            ),
+            'roles' => array(
+                // role => group
+            ),
+            'class' => 'Symfony\\Component\\Security\\Core\\User\\User',
+            'filter' => '(&(objectClass=user)(sAMAccountName=%s))',
+            'baseDn' => null,
+        );
+        $this->options = array_merge($defaults, $options);
     }
 
     /**
-     * {inheritDoc}
+     * {inheritDoc}.
      */
     public function loadUserByUsername($username)
     {
@@ -69,7 +81,7 @@ class LdapUserProvider implements UserProviderInterface {
         $userClass = $this->options['class'];
         $roles = array();
         if (array_key_exists('memberof', $userData) && array_key_exists('roles', $this->options)) {
-            foreach ($this->options['roles'] as $role => $group) {
+            foreach ($this->options['roles'] as $group => $role) {
                 if (in_array($group, $userData['memberof'])) {
                     $roles[] = $role;
                 }
@@ -90,7 +102,7 @@ class LdapUserProvider implements UserProviderInterface {
     }
 
     /**
-     * {inheritDoc}
+     * {inheritDoc}.
      */
     public function refreshUser(UserInterface $user)
     {
@@ -102,11 +114,10 @@ class LdapUserProvider implements UserProviderInterface {
     }
 
     /**
-     * {inheritDoc}
+     * {inheritDoc}.
      */
     public function supportsClass($class)
     {
         return $class === $this->options['class'];
     }
-
 }

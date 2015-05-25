@@ -33,11 +33,11 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
     /**
      * Create instance.
      *
-     * @param string                    $providerKey  The provider key.
-     * @param UserProviderInterface     $userProvider A user provider.
-     * @param Zend\Ldap\Ldap            $ldap         Ldap serivce.
-     * @param Logger                    $logger       Optional logger.
-     * @param array                     $options      Options.
+     * @param string                $providerKey  The provider key.
+     * @param UserProviderInterface $userProvider A user provider.
+     * @param Zend\Ldap\Ldap        $ldap         Ldap serivce.
+     * @param Logger                $logger       Optional logger.
+     * @param array                 $options      Options.
      */
     public function __construct($providerKey, UserProviderInterface $userProvider, $ldap, LoggerInterface $logger = null, array $options = array())
     {
@@ -64,11 +64,13 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
     /**
      * Validate username / credentials using Ldap.
      *
-     * @param string $username The username.
+     * @param string $username    The username.
      * @param string $credentials The credentials.
-     * @return boolean <code>true</code> if the credentials are valid.
+     *
+     * @return bool <code>true</code> if the credentials are valid.
      */
-    protected function ldapAuth($username, $credentials) {
+    protected function ldapAuth($username, $credentials)
+    {
         try {
             $this->ldap->bind($username, $credentials);
 
@@ -85,5 +87,4 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
     {
         return $token instanceof UsernamePasswordToken;
     }
-
 }

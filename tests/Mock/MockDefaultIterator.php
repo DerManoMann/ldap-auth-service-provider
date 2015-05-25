@@ -55,5 +55,4 @@ class MockDefaultIterator extends DefaultIterator
     {
         return $this->iterator->count();
     }
-
 }
