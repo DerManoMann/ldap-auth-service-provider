@@ -97,7 +97,7 @@ abstract class LdapAuthTestCase extends \PHPUnit_Framework_TestCase
                     'CN=Development,OU=Groups,DC=radebatz,DC=net' => 'ROLE_USER',
                     'CN=Admins,OU=Groups,DC=radebatz,DC=net' => 'ROLE_ADMIN',
                 ),
-                'class' => 'Radebatz\Silex\LdapAuth\Tests\Security\Core\User\CustomUser',
+                'class' => 'Radebatz\Silex\LdapAuth\Security\Core\User\LdapUser',
                 // just the name :)
                 'filter' => '%s',
                 'baseDn' => 'DC=radebatz,DC=net',
