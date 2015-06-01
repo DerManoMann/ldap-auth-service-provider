@@ -71,6 +71,11 @@ class LdapUser implements UserInterface
     {
     }
 
+    public function setRoles(array $roles)
+    {
+        $this->roles = $roles;
+    }
+
     /**
      * Handle get/set property.
      */
