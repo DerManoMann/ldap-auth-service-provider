@@ -75,7 +75,8 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
         // the actual Ldap resource
         if (!isset($app['security.ldap.'.$serviceName.'.ldap'])) {
             $app['security.ldap.'.$serviceName.'.ldap'] = function () use ($app, $serviceName) {
-                return new Ldap($app['security.ldap.config']($serviceName));
+                // we need just the ldap options here
+                return new Ldap($app['security.ldap.config']($serviceName)['ldap']);
             };
         }
 
@@ -88,21 +89,21 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 
         // set up authentication provider factory and user provider
         $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName) {
-            $ldapOption = $app['security.ldap.config']($serviceName);
-            $entryPoint = $ldapOption['auth']['entryPoint'];
+            $serviceOptions = $app['security.ldap.config']($serviceName);
+            $entryPoint = $serviceOptions['auth']['entryPoint'];
 
             if ($entryPoint && !isset($app['security.entry_point.'.$name.'.'.$entryPoint])) {
                 $app['security.entry_point.'.$name.'.'.$entryPoint] = $app['security.entry_point.'.$entryPoint.'._proto']($name, $options);
             }
 
             // define the authentication provider object
-            $app['security.authentication_provider.'.$name.'.'.$serviceName] = function () use ($app, $name, $ldapOption, $serviceName) {
+            $app['security.authentication_provider.'.$name.'.'.$serviceName] = function () use ($app, $name, $serviceOptions, $serviceName) {
                 return new LdapAuthenticationProvider(
                     $serviceName,
                     $app['security.user_provider.'.$name],
                     $app['security.ldap.'.$serviceName.'.ldap'],
                     $app['logger'],
-                    $ldapOption['auth']
+                    $serviceOptions['auth']
                 );
             };
 
