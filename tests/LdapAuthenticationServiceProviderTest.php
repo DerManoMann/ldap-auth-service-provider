@@ -11,6 +11,8 @@
 
 namespace Radebatz\Silex\LdapAuth\Tests;
 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 use Silex\Application;
 use Silex\Provider\SessionServiceProvider;
 use Silex\Provider\SecurityServiceProvider;
@@ -100,32 +102,46 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $this->assertEquals('admin', $client->getResponse()->getContent());
     }
 
-    public function createApplication($authenticationMethod = 'form', $name = 'default')
+    public function createApplication($authenticationMethod = 'form')
     {
         $app = new Application();
+        $app['debug'] = true;
         $app->register(new SessionServiceProvider());
-
-        $app = call_user_func(array($this, 'add'.ucfirst($authenticationMethod ?: 'null').'Authentication'), $app);
+        /*
+        $app['logger'] = new Logger('CLI');
+        $app['logger']->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
+        */
 
         // ********* //
-        $this->registerLdapAuthenticationServiceProvider($app, $name);
+        $serviceName = 'ldap-'.$authenticationMethod;
+        $this->registerLdapAuthenticationServiceProvider($app, $authenticationMethod, $serviceName);
+        $app = call_user_func(array($this, 'add'.ucfirst($authenticationMethod ?: 'null').'Authentication'), $app, $serviceName);
 
         $app['session.test'] = true;
 
         return $app;
     }
 
-    protected function registerLdapAuthenticationServiceProvider($app, $name)
+    protected function registerLdapAuthenticationServiceProvider($app, $authenticationMethod, $serviceName)
     {
-        // ldap: name of firewall auth type to use
-        $app->register(new LdapAuthenticationServiceProvider('ldap'));
+        $app->register(new LdapAuthenticationServiceProvider($serviceName), array(
+            'security.ldap.'.$serviceName.'.options' => array_merge(
+                $this->getOptions(),
+                array(
+                    'auth' => array(
+                        'entryPoint' => $authenticationMethod,
+                    ),
+                )
+            )
+        ));
 
-        $app['security.ldap.'.$name.'.ldap'] = function () {
+        // need this before the firewall is configured
+        $app['security.ldap.'.$serviceName.'.ldap'] = function () {
             return $this->createLdap();
         };
     }
 
-    private function addFormAuthentication($app)
+    private function addFormAuthentication($app, $serviceName)
     {
         $app->register(new SecurityServiceProvider(), array(
             'security.firewalls' => array(
@@ -135,30 +151,17 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
                 'default' => array(
                     'pattern' => '^.*$',
                     'anonymous' => true,
-                    'ldap' => array_merge(
-                        array(
-                            'check_path' => '/login_check_ldap',
-                            'require_previous_session' => false,
-                        ),
-                        $this->getOptions(),
-                        array(
-                            'auth' => array(
-                                'entryPoint' => 'form',
-                            ),
-                        )
+                    // acts like form
+                    $serviceName => array(
+                        'check_path' => '/login_check_ldap',
+                        'require_previous_session' => false,
                     ),
                     'logout' => true,
-                    'users' => function () use ($app) {
+                    'users' => function () use ($app, $serviceName) {
                         $options = $this->getOptions();
 
-                        return new LdapUserProvider('ldap', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
+                        return $app['security.ldap.'.$serviceName.'.user_provider']($options['user']);
                     },
-                    /*
-                        // password is foo
-                        'fabien' => array('ROLE_USER', '5FZ2Z8QIkA7UTZ4BYkoC+GsReLf569mSKDsfods6LYQ8t+a8EW9oaircfMpmaLbPBh4FOBiiFyLfuZmTSUwzZg=='),
-                        'admin'  => array('ROLE_ADMIN', '5FZ2Z8QIkA7UTZ4BYkoC+GsReLf569mSKDsfods6LYQ8t+a8EW9oaircfMpmaLbPBh4FOBiiFyLfuZmTSUwzZg=='),
-                    ),
-                    */
                 ),
             ),
             'security.access_rules' => array(
@@ -198,32 +201,19 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         return $app;
     }
 
-    private function addHttpAuthentication($app)
+    private function addHttpAuthentication($app, $serviceName)
     {
         $app->register(new SecurityServiceProvider(), array(
             'security.firewalls' => array(
                 'default' => array(
                     'pattern' => '^.*$',
-                    'ldap' => array_merge(
-                        $this->getOptions(),
-                        array(
-                            'auth' => array(
-                                'entryPoint' => 'http',
-                            ),
-                        )
-                    ),
-                    'users' => function () use ($app) {
+                    // acts like http
+                    $serviceName => true,
+                    'users' => function () use ($app, $serviceName) {
                         $options = $this->getOptions();
 
-                        return new LdapUserProvider('ldap', $app['security.ldap.default.ldap'], $app['logger'], $options['user']);
+                        return $app['security.ldap.'.$serviceName.'.user_provider']($options['user']);
                     },
-                    /*
-                    'users' => array(
-                        // password is foo
-                        'dennis' => array('ROLE_USER', '5FZ2Z8QIkA7UTZ4BYkoC+GsReLf569mSKDsfods6LYQ8t+a8EW9oaircfMpmaLbPBh4FOBiiFyLfuZmTSUwzZg=='),
-                        'admin'  => array('ROLE_ADMIN', '5FZ2Z8QIkA7UTZ4BYkoC+GsReLf569mSKDsfods6LYQ8t+a8EW9oaircfMpmaLbPBh4FOBiiFyLfuZmTSUwzZg=='),
-                    ),
-                    */
                 ),
             ),
             'security.access_rules' => array(

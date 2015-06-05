@@ -9,51 +9,47 @@ This service provider provides Ldap based authentication and authorization.
 ## Basic Usage
 
 ```php
-  // register service with name ldap
-  $ldapAuth = 'ldap';
-  $app->register(new LdapAuthenticationServiceProvider($ldapAuth));
-  
-  // configure firewalls
-  $app->register(new SecurityServiceProvider(), array(
-            'security.firewalls' => array(
-                'login' => array(
-                    'pattern' => '^/login$',
-                ),
-                'default' => array(
-                    'pattern' => '^.*$',
-                    'anonymous' => true,
-                    $ldapAuth => array(
-                        // form options
-                        'check_path' => '/login_check_ldap',
-                        'require_previous_session' => false,
-                        // auth options
-                        'auth' => array(
-                            'entryPoint' => 'form',
-                        ),
-                        // ldap options
-                        'ldap' => array(
-                            'host' => 'localhost',
-                            'username' => 'username-for-initial-bind',
-                            'password' => 'xxx',
-                        
-                        ),
-                    ),
-                    'users' => function () use ($app, $ldapAuth) {
-                        return new LdapUserProvider(
-                            $ldapAuth,
-                            $app['security.ldap.default.ldap'],
-                            $app['logger'],
-                            array(
-                                'roles' => array(
-                                    'CN=Development,OU=Groups,DC=radebatz,DC=net'   => 'ROLE_USER',
-                                    'CN=Admins,OU=Groups,DC=radebatz,DC=net'        => 'ROLE_ADMIN',
-                                ),
-                                'baseDn' => 'DC=radebatz,DC=net',
-                            )
-                        );
-                    },
-                ),
+    // register service with name LDAP-FORM
+    $app->register(new LdapAuthenticationServiceProvider('LDAP-FORM'), array(
+        'security.ldap.LDAP-FORM.options' => array(
+            'auth' => array(
+                'entryPoint' => 'form',
             ),
+            'ldap' => array(
+                'host' => 'localhost',
+                'username' => 'username-for-initial-bind',
+                'password' => 'xxx',
+            ),
+        )
+    ));
+
+    // configure firewalls
+    $app->register(new SecurityServiceProvider(), array(
+        'security.firewalls' => array(
+            'login' => array(
+                'pattern' => '^/login$',
+            ),
+            'default' => array(
+                'pattern' => '^.*$',
+                'anonymous' => true,
+                'LDAP-FORM' => array(
+                    // form options
+                    'check_path' => '/login_check_ldap',
+                    'require_previous_session' => false,
+                ),
+                'users' => function () use ($app) {
+                    // use the pre-configured Ldap user provider
+                    return $app['security.ldap.LDAP-FORM.user_provider'](array(
+                        'roles' => array(
+                            'CN=Development,OU=Groups,DC=radebatz,DC=net'   => 'ROLE_USER',
+                            'CN=Admins,OU=Groups,DC=radebatz,DC=net'        => 'ROLE_ADMIN',
+                        ),
+                        'baseDn' => 'DC=radebatz,DC=net',
+                    ));
+                },
+            ),
+        )
+    ));
   
 ```
 
@@ -78,7 +74,8 @@ For more details check the [`zend-ldap docs`](http://framework.zend.com/manual/c
 
 
 ### Custom user class
-The LdapUserProvider class allows to configure a custom User class to be used. Only restriction is that the custom class has a constructor that is compatible with the default class `Symfony\\Component\\Security\\Core\\User\\User`.
+The LdapUserProvider class allows to configure a custom User class to be used.
+Only restriction is that the custom class has a constructor that is compatible with the default class `Symfony\\Component\\Security\\Core\\User\\User`.
 
 
 ## Requirements

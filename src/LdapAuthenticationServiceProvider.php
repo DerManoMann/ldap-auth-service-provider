@@ -15,6 +15,7 @@ use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 use Zend\Ldap\Ldap;
 use Radebatz\Silex\LdapAuth\Security\Core\Authentication\Provider\LdapAuthenticationProvider;
+use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 
 /**
  * Ldap authentication service provider.
@@ -61,8 +62,8 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
             ),
         );
 
-        // firewall options
-        $app['security.ldap.'.$serviceName.'.options'] = $app->protect(function ($options) use ($defaults) {
+        $app['security.ldap.config'] = $app->protect(function ($serviceName) use ($app, $defaults) {
+            $options = isset($app['security.ldap.'.$serviceName.'.options']) ? $app['security.ldap.'.$serviceName.'.options'] : array();
             // replace within each key
             foreach (array_keys($defaults) as $key) {
                 $options[$key] = array_replace($defaults[$key], array_key_exists($key, $options) ? $options[$key] : array());
@@ -71,30 +72,37 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
             return $options;
         });
 
+        // the actual Ldap resource
+        if (!isset($app['security.ldap.'.$serviceName.'.ldap'])) {
+            $app['security.ldap.'.$serviceName.'.ldap'] = function () use ($app, $serviceName) {
+                return new Ldap($app['security.ldap.config']($serviceName));
+            };
+        }
+
+        // ready made user provider
+        if (!isset($app['security.ldap.'.$serviceName.'.user_provider'])) {
+            $app['security.ldap.'.$serviceName.'.user_provider'] = $app->protect(function ($options = array()) use ($app, $serviceName) {
+                return new LdapUserProvider($serviceName, $app['security.ldap.'.$serviceName.'.ldap'], $app['logger'], $options);
+            });
+        }
+
         // set up authentication provider factory and user provider
         $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName) {
-            $options = $app['security.ldap.'.$serviceName.'.options']($options);
-            $entryPoint = $options['auth']['entryPoint'];
-
-            // the actual Ldap resource
-            if (!isset($app['security.ldap.'.$name.'.ldap'])) {
-                $app['security.ldap.'.$name.'.ldap'] = function () use ($options) {
-                    return new Ldap($options['ldap']);
-                };
-            }
+            $ldapOption = $app['security.ldap.config']($serviceName);
+            $entryPoint = $ldapOption['auth']['entryPoint'];
 
             if ($entryPoint && !isset($app['security.entry_point.'.$name.'.'.$entryPoint])) {
                 $app['security.entry_point.'.$name.'.'.$entryPoint] = $app['security.entry_point.'.$entryPoint.'._proto']($name, $options);
             }
 
             // define the authentication provider object
-            $app['security.authentication_provider.'.$name.'.'.$serviceName] = function () use ($app, $name, $options, $serviceName) {
+            $app['security.authentication_provider.'.$name.'.'.$serviceName] = function () use ($app, $name, $ldapOption, $serviceName) {
                 return new LdapAuthenticationProvider(
                     $serviceName,
                     $app['security.user_provider.'.$name],
-                    $app['security.ldap.'.$name.'.ldap'],
+                    $app['security.ldap.'.$serviceName.'.ldap'],
                     $app['logger'],
-                    $options['auth']
+                    $ldapOption['auth']
                 );
             };
 
