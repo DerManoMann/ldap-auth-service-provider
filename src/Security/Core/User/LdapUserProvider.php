@@ -50,7 +50,7 @@ class LdapUserProvider implements UserProviderInterface
             'roles' => array(
                 // role => group
             ),
-            'class' => 'Symfony\\Component\\Security\\Core\\User\\User',
+            'class' => 'Radebatz\\Silex\\LdapAuth\\Security\\Core\\User\\LdapUser',
             'filter' => '(&(objectClass=user)(sAMAccountName=%s))',
             'baseDn' => null,
         );
