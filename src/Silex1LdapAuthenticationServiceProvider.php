@@ -11,8 +11,8 @@
 
 namespace Radebatz\Silex\LdapAuth;
 
-use Pimple\Container;
-use Pimple\ServiceProviderInterface;
+use Silex\Application;
+use Silex\ServiceProviderInterface;
 use Zend\Ldap\Ldap;
 use Radebatz\Silex\LdapAuth\Security\Core\Authentication\Provider\LdapAuthenticationProvider;
 use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
@@ -20,7 +20,7 @@ use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 /**
  * Ldap authentication service provider.
  */
-class LdapAuthenticationServiceProvider implements ServiceProviderInterface
+class Silex1LdapAuthenticationServiceProvider implements ServiceProviderInterface
 {
     protected $serviceName;
 
@@ -37,7 +37,7 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
     /**
      * {@inheritDoc}
      */
-    public function register(Container $app)
+    public function register(Application $app)
     {
         // our name
         $serviceName = $this->serviceName;
@@ -123,5 +123,12 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
                 'pre_auth',
             );
         });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function boot(Application $app)
+    {
     }
 }
