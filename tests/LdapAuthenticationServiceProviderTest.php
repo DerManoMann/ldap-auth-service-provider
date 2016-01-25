@@ -64,7 +64,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $this->assertEquals('ANONYMOUS', $client->getResponse()->getContent());
 
         $client->request('post', '/login_check_ldap', array('_username' => 'fabien', '_password' => 'bar'));
-        $this->assertEquals('Bad credentials.', $app['security.last_error']($client->getRequest()));
+        $this->assertContains('Bad credentials', $app['security.last_error']($client->getRequest()));
         // hack to re-close the session as the previous assertions re-opens it
         $client->getRequest()->getSession()->save();
 
@@ -102,7 +102,7 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $this->assertEquals('admin', $client->getResponse()->getContent());
     }
 
-    public function createApplication($authenticationMethod = 'form')
+    public function createApplication($authenticationMethod)
     {
         $app = new Application();
         $app['debug'] = true;
@@ -179,15 +179,15 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         });
 
         $app->get('/', function () use ($app) {
-            $user = $app['security']->getToken()->getUser();
+            $user = $app['security.token_storage']->getToken()->getUser();
 
             $content = is_object($user) ? $user->getUsername() : 'ANONYMOUS';
 
-            if ($app['security']->isGranted('IS_AUTHENTICATED_FULLY')) {
+            if ($app['security.authorization_checker']->isGranted('IS_AUTHENTICATED_FULLY')) {
                 $content .= 'AUTHENTICATED';
             }
 
-            if ($app['security']->isGranted('ROLE_ADMIN')) {
+            if ($app['security.authorization_checker']->isGranted('ROLE_ADMIN')) {
                 $content .= 'ADMIN';
             }
 
