@@ -20,7 +20,6 @@ class LdapUser implements UserInterface
 {
     protected $username;
     protected $password;
-    protected $firstName;
     protected $roles;
     protected $properties;
 
@@ -92,7 +91,7 @@ class LdapUser implements UserInterface
 
             return array_key_exists($property, $this->properties) ? $this->properties[$property] : null;
         }
-    
+
         throw new \RuntimeException('Invalid method: '.$method);
     }
 
