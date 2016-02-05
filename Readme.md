@@ -67,6 +67,20 @@ Alternatively, you can download the [`ldap-auth-service-provider.zip`][1] file a
 The Ldap related code depends on [`zend-ldap`](https://github.com/zendframework/zend-ldap), so all configuration options are just passed through.
 For more details check the [`zend-ldap docs`](http://framework.zend.com/manual/current/en/index.html#zend-ldap).
 
+In addition the provider allows to configure a list of hosts to try. If none in the list can't be connected, the regularly configured host is used as
+last resort.
+
+Example:
+````
+ldap:
+  ldap:
+    hosts:
+      - ldap1
+      - ldap2
+    host: localhost
+````
+In this case the code will try to connect in the order: ldap1, ldap2, localhost.
+
 
 ### Custom user class
 The LdapUserProvider class allows to configure a custom User class to be used.
