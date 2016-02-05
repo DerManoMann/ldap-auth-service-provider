@@ -75,8 +75,40 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
         // the actual Ldap resource
         if (!isset($app['security.ldap.'.$serviceName.'.ldap'])) {
             $app['security.ldap.'.$serviceName.'.ldap'] = function () use ($app, $serviceName) {
-                // we need just the ldap options here
-                return new Ldap($app['security.ldap.config']($serviceName)['ldap']);
+                // ldap options
+                $options = $app['security.ldap.config']($serviceName)['ldap'];
+
+                // check for host list
+                if (array_key_exists('hosts', $options) && is_array($options['hosts'])) {
+                    // keep local
+                    $hosts = $options['hosts'];
+
+                    // remove from options...
+                    unset($options['hosts']);
+
+                    foreach ($hosts as $host) {
+                        try {
+                            // do not override default host
+                            $ldap = new Ldap(array_merge($options, ['host' => $host]));
+
+                            // force connect...
+                            $ldap->getResource();
+
+                            return $ldap;
+                        } catch (LdapException $le) {
+                            if ($app->offsetExists('logger')) {
+                                $app['logger']->warning(sprintf('LDAP: Failed connecting to host: %s', $host));
+                            }
+                        }
+                    }
+                }
+
+                if ($app->offsetExists('logger')) {
+                    $app['logger']->info(sprintf('LDAP: Using default host: %s', $options['host']));
+                }
+
+                // just pass through all options using configured (single) host
+                return new Ldap($options);
             };
         }
 
