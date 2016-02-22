@@ -60,8 +60,6 @@ Install the latest version with:
 $ composer require radebatz/ldap-auth-service-provider
 ```
 
-Alternatively, you can download the [`ldap-auth-service-provider.zip`][1] file and extract it.
-
 
 ### Configuring Ldap
 The Ldap related code depends on [`zend-ldap`](https://github.com/zendframework/zend-ldap), so all configuration options are just passed through.
@@ -93,8 +91,27 @@ Only restriction is that the custom class has a constructor that is compatible w
 
 
 ## License
-
 All code is licensed under the MIT license.
 
 
-[1]: https://github.com/DerManoMann/ldap-auth-service-provider/archive/master.zip
+## Changelog
+Issues that break backwards compatibility are flagged [BC].
+
+### v1.0.0
+* Initial release
+
+### v1.1.0
+* Move options into security.ldap.[serviceName] namespace
+* Add preconfigured user provider
+
+### v1.2.0
+* Add Silex 1.3 support
+* bug fixes
+
+### v1.2.1
+* Add hosts option to allow a list of fallback servers
+
+### v1.2.2
+* Fix LdapException handling
+* Add Psr\Log dependency
+* [BC] Make the logger an optional second constructor argument instead of taking it from $app
