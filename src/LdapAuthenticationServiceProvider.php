@@ -11,6 +11,7 @@
 
 namespace Radebatz\Silex\LdapAuth;
 
+use Psr\Log\LoggerInterface;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 use Zend\Ldap\Exception\LdapException;
@@ -24,15 +25,18 @@ use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
 class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 {
     protected $serviceName;
+    protected $logger;
 
     /**
      * Create new instance.
      *
      * @param string $serviceName Service name.
+     * @param Psr\Log\LoggerInterface $logger     Optional logger.
      */
-    public function __construct($serviceName = 'ldap')
+    public function __construct($serviceName = 'ldap', LoggerInterface $logger = null)
     {
         $this->serviceName = $serviceName;
+        $this->logger = $logger;
     }
 
     /**
@@ -42,6 +46,8 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
     {
         // our name
         $serviceName = $this->serviceName;
+        // a logger (or not);
+        $logger = $this->logger;
 
         $defaults = array(
             // authentication defaults
@@ -75,7 +81,7 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 
         // the actual Ldap resource
         if (!isset($app['security.ldap.'.$serviceName.'.ldap'])) {
-            $app['security.ldap.'.$serviceName.'.ldap'] = function () use ($app, $serviceName) {
+            $app['security.ldap.'.$serviceName.'.ldap'] = function () use ($app, $serviceName, $logger) {
                 // ldap options
                 $options = $app['security.ldap.config']($serviceName)['ldap'];
 
@@ -97,15 +103,15 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 
                             return $ldap;
                         } catch (LdapException $le) {
-                            if ($app->offsetExists('logger')) {
-                                $app['logger']->warning(sprintf('LDAP: Failed connecting to host: %s', $host));
+                            if ($logger) {
+                                $logger->warning(sprintf('LDAP: Failed connecting to host: %s', $host));
                             }
                         }
                     }
                 }
 
-                if ($app->offsetExists('logger')) {
-                    $app['logger']->info(sprintf('LDAP: Using default host: %s', $options['host']));
+                if ($logger) {
+                    $logger->info(sprintf('LDAP: Using default host: %s', $options['host']));
                 }
 
                 // just pass through all options using configured (single) host
@@ -115,13 +121,13 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
 
         // ready made user provider
         if (!isset($app['security.ldap.'.$serviceName.'.user_provider'])) {
-            $app['security.ldap.'.$serviceName.'.user_provider'] = $app->protect(function ($options = array()) use ($app, $serviceName) {
-                return new LdapUserProvider($serviceName, $app['security.ldap.'.$serviceName.'.ldap'], $app['logger'], $options);
+            $app['security.ldap.'.$serviceName.'.user_provider'] = $app->protect(function ($options = array()) use ($app, $serviceName, $logger) {
+                return new LdapUserProvider($serviceName, $app['security.ldap.'.$serviceName.'.ldap'], $logger, $options);
             });
         }
 
         // set up authentication provider factory and user provider
-        $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName) {
+        $app['security.authentication_listener.factory.'.$serviceName] = $app->protect(function ($name, $options) use ($app, $serviceName, $logger) {
             $serviceOptions = $app['security.ldap.config']($serviceName);
             $entryPoint = $serviceOptions['auth']['entryPoint'];
 
@@ -130,12 +136,12 @@ class LdapAuthenticationServiceProvider implements ServiceProviderInterface
             }
 
             // define the authentication provider object
-            $app['security.authentication_provider.'.$name.'.'.$serviceName] = function () use ($app, $name, $serviceOptions, $serviceName) {
+            $app['security.authentication_provider.'.$name.'.'.$serviceName] = function () use ($app, $name, $serviceOptions, $serviceName, $logger) {
                 return new LdapAuthenticationProvider(
                     $serviceName,
                     $app['security.user_provider.'.$name],
                     $app['security.ldap.'.$serviceName.'.ldap'],
-                    $app['logger'],
+                    $logger,
                     $serviceOptions['auth']
                 );
             };

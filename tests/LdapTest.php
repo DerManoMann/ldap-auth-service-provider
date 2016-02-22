@@ -23,43 +23,46 @@ use Radebatz\Silex\LdapAuth\LdapAuthenticationServiceProvider;
 class LdapTest extends LdapAuthTestCase
 {
 
+    public function loggerProvider()
+    {
+        $logger = new Logger('CLI');
+        $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
+
+        return [
+            'null' => [null],
+            'psr' => [$logger],
+        ];
+    }
+
     /**
+     * @dataProvider loggerProvider
      * @expectedException Symfony\Component\Security\Core\Exception\UsernameNotFoundException
      */
-    public function testLdapExceptionSimple()
+    public function testLdapExceptionSimple($logger)
     {
         $app = new Application();
         $app['debug'] = true;
         $app->register(new SessionServiceProvider());
 
-        $app['logger'] = new Logger('CLI');
-        $app['logger']->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
-        /*
-        */
-
         $serviceName = 'ldap-form';
-        $app->register(new LdapAuthenticationServiceProvider($serviceName));
+        $app->register(new LdapAuthenticationServiceProvider($serviceName, $logger));
 
         // try the user provider with invalid Ldap configuration
         $app['security.ldap.'.$serviceName.'.user_provider']()->loadUserByUsername('mano');
     }
 
     /**
+     * @dataProvider loggerProvider
      * @expectedException Symfony\Component\Security\Core\Exception\UsernameNotFoundException
      */
-    public function testLdapExceptionHosts()
+    public function testLdapExceptionHosts($logger)
     {
         $app = new Application();
         $app['debug'] = true;
         $app->register(new SessionServiceProvider());
 
-        $app['logger'] = new Logger('CLI');
-        $app['logger']->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
-        /*
-        */
-
         $serviceName = 'ldap-form';
-        $app->register(new LdapAuthenticationServiceProvider($serviceName), array(
+        $app->register(new LdapAuthenticationServiceProvider($serviceName, $logger), array(
             'security.ldap.'.$serviceName.'.options' => array(
                 'ldap' => array(
                     'hosts' => array(
