@@ -13,6 +13,7 @@ namespace Radebatz\Silex\LdapAuth;
 
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
+use Zend\Ldap\Exception\LdapException;
 use Zend\Ldap\Ldap;
 use Radebatz\Silex\LdapAuth\Security\Core\Authentication\Provider\LdapAuthenticationProvider;
 use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
