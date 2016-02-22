@@ -27,9 +27,23 @@ use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUserProvider;
  */
 class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
 {
-    public function testLdapHttpAuthentication()
+    public function loggerProvider()
     {
-        $app = $this->createApplication('http');
+        $logger = new Logger('CLI');
+        $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
+
+        return [
+            'null' => [null],
+            'psr' => [$logger],
+        ];
+    }
+
+    /**
+     * @dataProvider loggerProvider
+     */
+    public function testLdapHttpAuthentication($logger)
+    {
+        $app = $this->createApplication('http', $logger);
 
         $client = new Client($app);
 
@@ -54,9 +68,12 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $this->assertEquals('admin', $client->getResponse()->getContent());
     }
 
-    public function testLdapFormAuthentication()
+    /**
+     * @dataProvider loggerProvider
+     */
+    public function testLdapFormAuthentication($logger)
     {
-        $app = $this->createApplication('form');
+        $app = $this->createApplication('form', $logger);
 
         $client = new Client($app);
 
@@ -102,20 +119,15 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         $this->assertEquals('admin', $client->getResponse()->getContent());
     }
 
-    public function createApplication($authenticationMethod)
+    public function createApplication($authenticationMethod, $logger)
     {
         $app = new Application();
         $app['debug'] = true;
         $app->register(new SessionServiceProvider());
 
-        /*
-        $app['logger'] = new Logger('CLI');
-        $app['logger']->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
-        */
-
         // ********* //
         $serviceName = 'ldap-'.$authenticationMethod;
-        $this->registerLdapAuthenticationServiceProvider($app, $authenticationMethod, $serviceName);
+        $this->registerLdapAuthenticationServiceProvider($app, $authenticationMethod, $serviceName, $logger);
         $app = call_user_func(array($this, 'add'.ucfirst($authenticationMethod ?: 'null').'Authentication'), $app, $serviceName);
 
         $app['session.test'] = true;
@@ -123,18 +135,21 @@ class LdapAuthenticationServiceProviderTest extends LdapAuthTestCase
         return $app;
     }
 
-    protected function registerLdapAuthenticationServiceProvider($app, $authenticationMethod, $serviceName)
+    protected function registerLdapAuthenticationServiceProvider($app, $authenticationMethod, $serviceName, $logger)
     {
-        $app->register(new LdapAuthenticationServiceProvider($serviceName), array(
-            'security.ldap.'.$serviceName.'.options' => array_merge(
-                $this->getOptions(),
-                array(
-                    'auth' => array(
-                        'entryPoint' => $authenticationMethod,
-                    ),
+        $app->register(new LdapAuthenticationServiceProvider($serviceName, $logger),
+            array(
+                'security.ldap.'.$serviceName.'.options' => array_merge(
+                    $this->getOptions(),
+                    array(
+                        'auth' => array(
+                            'entryPoint' => $authenticationMethod,
+                        ),
+                    )
                 )
-            )
-        ));
+            ),
+            $app['logger']
+        );
 
         // need this before the firewall is configured
         $app['security.ldap.'.$serviceName.'.ldap'] = function () {

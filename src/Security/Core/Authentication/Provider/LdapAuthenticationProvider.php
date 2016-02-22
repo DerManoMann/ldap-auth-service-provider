@@ -36,7 +36,7 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
      * @param string                $providerKey  The provider key.
      * @param UserProviderInterface $userProvider A user provider.
      * @param Zend\Ldap\Ldap        $ldap         Ldap serivce.
-     * @param Logger                $logger       Optional logger.
+     * @param Psr\Log\LoggerInterface $logger     Optional logger.
      * @param array                 $options      Options.
      */
     public function __construct($providerKey, UserProviderInterface $userProvider, $ldap, LoggerInterface $logger = null, array $options = array())
