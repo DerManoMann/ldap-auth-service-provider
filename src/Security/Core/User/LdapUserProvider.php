@@ -44,8 +44,9 @@ class LdapUserProvider implements UserProviderInterface
         $this->logger = $logger;
         $defaults = array(
             'attr' => array(
-                // attribute => property
+                // LDAP attribute => user property
                 // these require setter support in the user class
+                'dn' => 'authName',
             ),
             'roles' => array(
                 // role => group
@@ -54,7 +55,11 @@ class LdapUserProvider implements UserProviderInterface
             'filter' => '(&(objectClass=user)(sAMAccountName=%s))',
             'baseDn' => null,
         );
-        $this->options = array_merge($defaults, $options);
+        // two level merging
+        $this->options = $defaults;
+        foreach ($options as $key => $value) {
+            $this->options[$key] = is_array($value) ? array_merge($this->options[$key], $value) : $value;
+        }
     }
 
     /**
@@ -92,9 +97,9 @@ class LdapUserProvider implements UserProviderInterface
         // set custom attributes
         foreach ($this->options['attr'] as $key => $property) {
             if (array_key_exists($key, $userData) && $userData[$key]) {
-                // use first value
+                // use (first) value
                 $method = 'set'.ucwords($property);
-                $user->$method($userData[$key][0]);
+                $user->$method(is_array($userData[$key]) ? $userData[$key][0] : $userData[$key]);
             }
         }
 

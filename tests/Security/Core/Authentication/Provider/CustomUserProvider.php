@@ -11,15 +11,15 @@
 
 namespace Radebatz\Silex\LdapAuth\Tests\Security\Core\Authentication\Provider;
 
-use Symfony\Component\Security\Core\User\User;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
+use Radebatz\Silex\LdapAuth\Security\Core\User\LdapUser;
 
 class CustomUserProvider implements UserProviderInterface
 {
     public function loadUserByUsername($username)
     {
-        return new User($username, null, array('ROLE_USER'));
+        return new LdapUser($username, null, array('ROLE_USER'));
     }
 
     public function refreshUser(UserInterface $user)
