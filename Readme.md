@@ -42,8 +42,11 @@ This service provider provides Ldap based authentication and authorization.
                 'users' => function () use ($app) {
                     // use the pre-configured Ldap user provider
                     return $app['security.ldap.LDAP-FORM.user_provider'](array(
+                        // configure LDAP attribute to use for auth bind call (dn is the default)
+                        'authName' => 'dn',
                         'attr' => array(
                             // LDAP attribute => user property
+                            // these require setter support in the user class
                             'sn' => 'lastName',
                         ),
                         'roles' => array(
@@ -78,11 +81,11 @@ To change this or allow an alternative fallback attribute, the following attribu
     'attr' => array(
         // LDAP attribute => user property
         'sn' => 'lastName',
-        'userprincipalname' => 'authName',
     ),
 ````
 
-NOTE: The property 'username' of the loaded user object is used for the bind when validating the user credentials (password).
+NOTE: The property 'authName' of the loaded user object is used for the bind when validating the user credentials (password).
+As a default the LDAP 'dn' attribute is mapped to the authName property of the user.
 
 In addition the provider allows to configure a list of hosts to try. If none in the list can't be connected, the regularly configured host is used as
 last resort.
@@ -136,7 +139,7 @@ Issues that break backwards compatibility are flagged [BC].
 
 ### v1.3.0
 * Use users DN as name when trying to bind user  [#15]
-  * add default user attr mapping dn => authName
+  * add new authName mapping to allow to control what LDAP attribute to use to bind when authentication (defaults to DN)
   * Fix merging of LdapUserProvider defaults
   * Check for values array when mapping LDAP data to user instance
   * [BC] Custom user classes *must* either support magic get/set methods or at least implement ````setAuthName()````, ````setAuthName($authName)````

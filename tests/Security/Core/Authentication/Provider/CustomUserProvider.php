@@ -19,7 +19,10 @@ class CustomUserProvider implements UserProviderInterface
 {
     public function loadUserByUsername($username)
     {
-        return new LdapUser($username, null, array('ROLE_USER'));
+        $user = new LdapUser($username, null, array('ROLE_USER'));
+        $user->setAuthName($username);
+
+        return $user;
     }
 
     public function refreshUser(UserInterface $user)

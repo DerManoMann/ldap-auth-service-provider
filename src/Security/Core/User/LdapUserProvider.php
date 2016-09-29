@@ -43,10 +43,11 @@ class LdapUserProvider implements UserProviderInterface
         $this->ldap = $ldap;
         $this->logger = $logger;
         $defaults = array(
+            // LDAP property used as auth name
+            'authName' => 'dn',
             'attr' => array(
                 // LDAP attribute => user property
                 // these require setter support in the user class
-                'dn' => 'authName',
             ),
             'roles' => array(
                 // role => group
@@ -92,7 +93,17 @@ class LdapUserProvider implements UserProviderInterface
                 }
             }
         }
+
         $user = new $userClass($username, null, array_unique($roles));
+
+        // map auth name
+        $authNameAttribute = $this->options['authName'];
+        if (array_key_exists($authNameAttribute, $userData)) {
+            if ($userData[$authNameAttribute]) {
+                // use (first) value
+                $user->setAuthName(is_array($userData[$authNameAttribute]) ? $userData[$authNameAttribute][0] : $userData[$authNameAttribute]);
+            }
+        }
 
         // set custom attributes
         foreach ($this->options['attr'] as $key => $property) {

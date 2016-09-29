@@ -46,6 +46,7 @@ class MockLdap extends Ldap
             if ($user['username'] == $filter) {
                 $data[] = array(
                     'samaccountname' => array($filter),
+                    'dn' => $filter,
                     'givenname' => array($user['firstName']),
                     'memberof' => $user['groups'],
                 );
