@@ -53,17 +53,9 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
      */
     public function authenticate(TokenInterface $token)
     {
-        $ldapUserName = $token->getUserName();
-        $user = $this->userProvider->loadUserByUsername($ldapUserName);
-        if ($user) {
-            if( array_key_exists('useDN', $this->options) && $this->options['useDN']) {
-                if ( null==($ldapUserName = $user->getdn()) ) {
-                    throw new Exception("Attribute DN must be configured to be retreived when using useDN authentication");
-                }
-            }
-            if ($this->ldapAuth($ldapUserName, $token->getCredentials())) {
-                return new UsernamePasswordToken($user, null, $this->providerKey, array_unique(array_merge($this->options['roles'], $token->getRoles(), $user->getRoles())));
-            }
+        $user = $this->userProvider->loadUserByUsername($token->getUsername());
+        if ($user && $this->ldapAuth($token->getUserName(), $token->getCredentials())) {
+            return new UsernamePasswordToken($user, null, $this->providerKey, array_unique(array_merge($this->options['roles'], $token->getRoles(), $user->getRoles())));
         }
 
         throw new AuthenticationException('Ldap authentication failed.');

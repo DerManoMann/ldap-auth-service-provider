@@ -94,7 +94,7 @@ class LdapUserProvider implements UserProviderInterface
             if (array_key_exists($key, $userData) && $userData[$key]) {
                 // use first value
                 $method = 'set'.ucwords($property);
-                $user->$method(is_array($userData[$key]) ? $userData[$key][0] : $userData[$key]);
+                $user->$method($userData[$key][0]);
             }
         }
 
