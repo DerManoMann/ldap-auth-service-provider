@@ -142,4 +142,4 @@ Issues that break backwards compatibility are flagged [BC].
   * add new authName mapping to allow to control what LDAP attribute to use to bind when authentication (defaults to DN)
   * Fix merging of LdapUserProvider defaults
   * Check for values array when mapping LDAP data to user instance
-  * [BC] Custom user classes *must* either support magic get/set methods or at least implement ````setAuthName()````, ````setAuthName($authName)````
+  * [BC] Custom user classes *must* either support magic get/set methods or at least implement ````getAuthName()````, ````setAuthName($authName)````
