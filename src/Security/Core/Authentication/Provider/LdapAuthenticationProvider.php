@@ -54,7 +54,7 @@ class LdapAuthenticationProvider implements AuthenticationProviderInterface
     public function authenticate(TokenInterface $token)
     {
         $user = $this->userProvider->loadUserByUsername($token->getUsername());
-        if ($user && $this->ldapAuth($token->getUserName(), $token->getCredentials())) {
+        if ($user && $this->ldapAuth($user->getAuthName(), $token->getCredentials())) {
             return new UsernamePasswordToken($user, null, $this->providerKey, array_unique(array_merge($this->options['roles'], $token->getRoles(), $user->getRoles())));
         }
 
